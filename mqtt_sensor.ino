@@ -15,6 +15,7 @@
 #include <PersistentConfiguration.h>
 
 #include <avr/wdt.h>
+#include <math.h>
 
 #include "mqtt.h"
 
@@ -107,14 +108,14 @@ void report_sensors(){
 #if ENVIRONMENTMONITOR_SENSOR_DHT22 > 0
   if (mon.hasDHT22()){
     tmp_topic=node_topic+"t/dht22";
-    ltoa(measurements[0].dht22.temperature, ltoa_buf, 10);
+    dtostrf(measurements[0].dht22.temperature, 3, 2, itoa_buf);
     client.publish(tmp_topic.c_str(),
-                   ltoa_buf,
+                   itoa_buf,
                    config.mqtt_retain);
     tmp_topic=node_topic+"h/dht22";
-    ltoa(measurements[0].dht22.humidity, ltoa_buf, 10);
+    dtostrf(measurements[0].dht22.humidity, 3, 2, itoa_buf);
     client.publish(tmp_topic.c_str(),
-                   ltoa_buf,
+                   itoa_buf,
                    config.mqtt_retain);
   }
 #endif
@@ -122,9 +123,9 @@ void report_sensors(){
 #if ENVIRONMENTMONITOR_SENSOR_MCP9808 > 0
   if (mon.hasMCP9808()){
     tmp_topic=node_topic+"t/mcp9808";
-    ltoa(measurements[0].mcp9808.temperature, ltoa_buf, 10);
+    dtostrf(measurements[0].mcp9808.temperature, 3, 2, itoa_buf);
     client.publish(tmp_topic.c_str(),
-                   ltoa_buf,
+                   itoa_buf,
                    config.mqtt_retain);
   }
 #endif
@@ -132,12 +133,12 @@ void report_sensors(){
 #if ENVIRONMENTMONITOR_SENSOR_BMP085 > 0
   if (mon.hasBMP085()){
     tmp_topic=node_topic+"t/bmp085";
-    ltoa(measurements[0].bmp085.temperature, ltoa_buf, 10);
+    dtostrf(measurements[0].bmp085.temperature, 3, 2, itoa_buf);
     client.publish(tmp_topic.c_str(),
-                   ltoa_buf,
+                   itoa_buf,
                    config.mqtt_retain);
     tmp_topic=node_topic+"p/bmp085";
-    itoa(measurements[0].bmp085.pressure, itoa_buf, 10);
+    dtostrf(measurements[0].bmp085.pressure, 5, 2, itoa_buf);
     client.publish(tmp_topic.c_str(),
                    itoa_buf,
                    config.mqtt_retain);
