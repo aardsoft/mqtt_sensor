@@ -1,0 +1,40 @@
+/*
+ * The only defines required here are MQTT_PASSWORD and MQTT_SERVER.
+ * The defines in the comments contain the default values as initialized
+ * in mqtt_client.ino if not set. Remove the commend and change if not
+ * suitable.
+ */
+
+// The root of the topic to publish to. The end result will be something like
+// mqtt_sensor/nodename/node-specific-topics
+//#define MQTT_BASE_TOPIC "mqtt_sensor"
+
+// The user for connecting to the MQTT broker
+//#define MQTT_USER "arduino"
+
+// The port the MQTT broker listens to
+//#define MQTT_PORT 1883
+
+// Maximum attempts for trying to (re-)connect to the MQTT broker. With those
+// exhausted the watchdog will be triggered for another round.
+//#define MQTT_MAX_CONNECTION_ATTEMPTS 3
+
+// The password for connecting to the MQTT broker
+#define MQTT_PASSWORD "password"
+
+// The hostname of the MQTT broker
+#define MQTT_SERVER "my.mqtt.server"
+
+// The following entries limit the maximum length of some configuration
+// settings. They're intentionally relatively short to reduce memory usage.
+// Adjust sensibly as needed. Take into account the nullbyte at the end of
+// the string - so MQTT_USER_MAX means 16 actually usable characters.
+
+// The maximum length of the MQTT username
+//#define MQTT_USER_MAX 17
+
+// The maximum length of the MQTT password
+//#define MQTT_PASSWORD_MAX 17
+
+// The maximum length of the MQTT hostname
+//#define MQTT_HOST_MAX 32
