@@ -156,11 +156,11 @@ void report_sensors(){
 void report_uptime(){
   String tmp_topic;
 
-  tmp_topic=node_topic+"mqtt_up";
+  tmp_topic=node_topic+"i/mqtt_up";
   ltoa((uptime-mqtt_uptime)/1000, ltoa_buf, 10);
   client.publish(tmp_topic.c_str(),
                  ltoa_buf);
-  tmp_topic=node_topic+"up";
+  tmp_topic=node_topic+"i/up";
   ltoa(uptime/1000, ltoa_buf, 10);
   client.publish(tmp_topic.c_str(),
                  ltoa_buf);
@@ -199,14 +199,20 @@ boolean reconnect_mqtt(){
         config.mqtt_pass)){
     mqtt_connect_counter=0;
     mqtt_uptime=millis();
-    String tmp_topic=node_topic+"v";
+    String tmp_topic=node_topic+"i/v";
     client.publish(tmp_topic.c_str(),
                    VERSION_STRING,
                    config.mqtt_retain);
 #ifdef BUILD_TAG
-    tmp_topic=node_topic+"b";
+    tmp_topic=node_topic+"i/b";
     client.publish(tmp_topic.c_str(),
                    BUILD_TAG,
+                   config.mqtt_retain);
+#endif
+#ifdef GIT_HASH
+    tmp_topic=node_topic+"i/c";
+    client.publish(tmp_topic.c_str(),
+                   GIT_HASH,
                    config.mqtt_retain);
 #endif
     report_uptime();

@@ -26,9 +26,14 @@ LDFLAGS += -Wl,--relax
 # make sure other libraries use the correct config struct
 CXXFLAGS += -DCONFIG_STRUCT=ConfigData -include config.h
 
+GIT_TAG = $(shell git describe --abbrev=0 --tags)
+GIT_TAG_DIRTY = $(shell git describe --abbrev=0 --tags --dirty=".d")
+GIT_HASH = $(shell git rev-parse --short HEAD)
+GIT_COMMITS = $(shell git rev-list $(GIT_TAG).. --count)
+
 SENSORS =
 CONNECTIVITY = Ethernet
-VERSION_STRING = 0.1
+VERSION_STRING = $(GIT_TAG_DIRTY).$(GIT_COMMITS)
 
 ifdef CONFIG
 include conf/$(CONFIG).mk
@@ -40,6 +45,7 @@ else
 endif
 
 CXXFLAGS += -DVERSION_STRING='"$(VERSION_STRING)"'
+CXXFLAGS += -DGIT_HASH='"$(GIT_HASH)"'
 
 ifdef BUILD_TAG
 TARGET = mqtt_sensor-$(BUILD_TAG)-$(VERSION_STRING)
