@@ -66,17 +66,18 @@ endif
 
 ifneq "$(findstring DHT,$(SENSORS))" ""
 CXXFLAGS += -DENVIRONMENTMONITOR_SENSOR_DHT22=1
-ARDUINO_LIBS += DHT Adafruit_Sensor
+ARDUINO_LIBS += DHT
 endif
 
 ifneq "$(findstring MCP9808,$(SENSORS))" ""
 CXXFLAGS += -DENVIRONMENTMONITOR_SENSOR_MCP9808=1
-ARDUINO_LIBS += Adafruit_MCP9808 Wire SPI Adafruit_Sensor
+ARDUINO_LIBS += Adafruit_MCP9808 Wire SPI
+#Adafruit_Sensor
 endif
 
 ifneq "$(findstring BMP085,$(SENSORS))" ""
 CXXFLAGS += -DENVIRONMENTMONITOR_SENSOR_BMP085=1
-ARDUINO_LIBS += Adafruit_BMP085 Adafruit_BusIO Adafruit_Sensor Wire
+ARDUINO_LIBS += Adafruit_BMP085 Wire
 endif
 
 ifneq "$(findstring RAIN,$(SENSORS))" ""
