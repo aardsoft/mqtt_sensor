@@ -108,12 +108,12 @@ void report_sensors(){
 #if ENVIRONMENTMONITOR_SENSOR_DHT22 > 0
   if (mon.hasDHT22()){
     tmp_topic=node_topic+"t/dht22";
-    dtostrf(measurements[0].dht22.temperature, 3, 2, itoa_buf);
+    dtostrf(measurements[0].dht22.temperature, 3, 1, itoa_buf);
     client.publish(tmp_topic.c_str(),
                    itoa_buf,
                    config.mqtt_retain);
     tmp_topic=node_topic+"h/dht22";
-    dtostrf(measurements[0].dht22.humidity, 3, 2, itoa_buf);
+    dtostrf(measurements[0].dht22.humidity, 3, 1, itoa_buf);
     client.publish(tmp_topic.c_str(),
                    itoa_buf,
                    config.mqtt_retain);
@@ -123,7 +123,7 @@ void report_sensors(){
 #if ENVIRONMENTMONITOR_SENSOR_MCP9808 > 0
   if (mon.hasMCP9808()){
     tmp_topic=node_topic+"t/mcp9808";
-    dtostrf(measurements[0].mcp9808.temperature, 3, 2, itoa_buf);
+    dtostrf(measurements[0].mcp9808.temperature, 3, 1, itoa_buf);
     client.publish(tmp_topic.c_str(),
                    itoa_buf,
                    config.mqtt_retain);
@@ -133,12 +133,12 @@ void report_sensors(){
 #if ENVIRONMENTMONITOR_SENSOR_BMP085 > 0
   if (mon.hasBMP085()){
     tmp_topic=node_topic+"t/bmp085";
-    dtostrf(measurements[0].bmp085.temperature, 3, 2, itoa_buf);
+    dtostrf(measurements[0].bmp085.temperature, 3, 1, itoa_buf);
     client.publish(tmp_topic.c_str(),
                    itoa_buf,
                    config.mqtt_retain);
     tmp_topic=node_topic+"p/bmp085";
-    dtostrf(measurements[0].bmp085.pressure, 5, 2, itoa_buf);
+    dtostrf(measurements[0].bmp085.pressure, 5, 1, itoa_buf);
     client.publish(tmp_topic.c_str(),
                    itoa_buf,
                    config.mqtt_retain);
