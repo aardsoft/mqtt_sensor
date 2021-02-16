@@ -1,0 +1,276 @@
+* Arduino MQTT Sensor                                                 :TOC_5:
+  - [[#introduction][Introduction]]
+  - [[#building][Building]]
+    - [[#toolchain-configuration-files][Toolchain configuration files]]
+      - [[#arduino-systemmk][../arduino-system.mk]]
+      - [[#confsystemmk][conf/system.mk]]
+      - [[#confboardmk][conf/board.mk]]
+    - [[#build-configuration-files][Build configuration files]]
+      - [[#mqtth][mqtt.h]]
+      - [[#confdefault-configmk][conf/default-config.mk]]
+      - [[#arbitrary-configuration-files-in-conf][arbitrary configuration files in conf/]]
+    - [[#building-1][Building]]
+  - [[#hardware][Hardware]]
+    - [[#arduino][Arduino]]
+    - [[#ethernet][Ethernet]]
+      - [[#enc28j60-ethernet-shield][ENC28J60 Ethernet shield]]
+      - [[#w5100-ethernet-shield][W5100 Ethernet shield]]
+      - [[#w5500-ethernet-shield][W5500 Ethernet shield]]
+      - [[#w5500-lite][W5500 Lite]]
+    - [[#sensors][Sensors]]
+      - [[#dht22-humidity-sensor][DHT22 humidity sensor]]
+      - [[#mcp9808-temperature-sensor][MCP9808 temperature sensor]]
+      - [[#bmp085-or-compatible-barometric-pressure-sensor][BMP085 or compatible barometric pressure sensor]]
+      - [[#bme280][BME280]]
+      - [[#rain-sensor-with-lm393][Rain sensor with LM393]]
+  - [[#mqtt-topic-structure][MQTT topic structure]]
+    - [[#i][i]]
+      - [[#v][v]]
+      - [[#b][b]]
+      - [[#c][c]]
+      - [[#up][up]]
+      - [[#mqtt_up][mqtt_up]]
+      - [[#bmp085][bmp085]]
+      - [[#mcp9808][mcp9808]]
+    - [[#r][r]]
+    - [[#p][p]]
+    - [[#h][h]]
+    - [[#t][t]]
+    - [[#s][s]]
+      - [[#i-interval][i (interval)]]
+      - [[#n-node-name][n (node name)]]
+      - [[#r-reset][r (reset)]]
+      - [[#t-retain][t (reTain)]]
+      - [[#m-mqtt-sub-settings][m (MQTT sub-settings)]]
+        - [[#mu-mqtt-user][mu (MQTT user)]]
+        - [[#mp-mqtt-password][mp (MQTT password)]]
+        - [[#ms-mqtt-server][ms (MQTT server)]]
+        - [[#mt-mqtt-port][mt (MQTT porT)]]
+
+** Introduction
+This is a customisable firmware to turn an Arduino with an Ethernet module into a MQTT sensor. Note that this chip is too small to handle TLS in any sensible way - the connection is unencrypted, and this sensor should only be used in an isolated network (separate VLAN, ideally not easily accessible ports).
+
+It makes use of the [[https://github.com/aardsoft/MACTool][MACTool]] library for persistently storing a device specific MAC address. Node specific settings can be configured via MQTT (including changing MQTT connection parameters), and are stored using the [[https://github.com/aardsoft/PersistentConfiguration][PersistentConfiguration]] library.
+
+Environment sensors are wrapped through the [[https://github.com/aardsoft/EnvironmentMonitor][EnvironmentMonitor]] library.
+
+At least the MACTool and PersistentConfiguration libraries need to be present in your library folder. To support sensor readings EnvironmentMonitor needs to be added as well. Sensor specific libraries may also be required, details are in the sensor specific sections.
+
+** Building
+This section covers the software requirements for building. See the Hardware section for buying and connecting the hardware. To get started at least the Arduino IDE and [[https://github.com/sudar/Arduino-Makefile][Arduino-Makefile]] need to be installed. Your distribution might have packages for both of them.
+
+Depending on installation paths toolchain and board configuration might need to be odjusted.
+
+*** Toolchain configuration files
+**** ../arduino-system.mk
+Place this file one level over the mqtt_sensor sources if you want to share toolchain settings between multiple code repositories. Creating this file is only necessary if the Arduino toolchain is not installed in =/usr/share/Arduino=.
+
+To use Arduino and arduino-mk from OpenSuSEs CrossToolchain:/avr project the file content would look like this:
+
+#+BEGIN_SRC bash
+ARDUINO_DIR  = /usr/lib64/Arduino-1.8.13
+AVR_TOOLS_DIR = /usr
+CXXFLAGS_STD += -fno-threadsafe-statics
+#+END_SRC
+
+**** conf/system.mk
+Place this file in the conf directory in the source tree. For the description see the previous section.
+**** conf/board.mk
+Place this file in the conf directory in the source tree. It is useful for adjusting board specific settings without touching the toolchain settings. For example, to change the default board from =pro= to =nano= add this:
+
+#+BEGIN_SRC bash
+BOARD_TAG    = nano
+#+END_SRC
+
+In most cases creating this file should not be needed.
+*** Build configuration files
+**** mqtt.h
+This header contains at a minimum the password for the MQTT user and the hostname for the MQTT server. To get started, copy mqtt.h.sample to mqtt.h, and edit it.
+**** conf/default-config.mk
+If no specific build configuration is specified on make invocation this file is used, if available. This is mainly useful if you only plan to use a single hardware configuration. At minimum the sensors to build for should be specified:
+
+#+BEGIN_SRC bash
+SENSORS = MCP9808 BMP085 DHT RAIN
+#+END_SRC
+**** arbitrary configuration files in conf/
+Arbitrary files - ending in .mk - can be added to the conf directory. At minimum they should contain the sensors definition. To build with a configuration file use the =CONFIG= variable. For example, =make CONFIG=my= would read conf/my.mk, set BUILD_TAG to =my= unless specified, include =my= in the binary name, and report =my= to MQTT on startup as build info.
+
+*** Building
+A =make= with no options will try to build the default configuration. If mqtt.h has been created this will result in a minimal binary capable of connecting to a MQTT broker, but without any sensors configured. It can be uploaded to a board with =make upload=.
+
+To build the configuration for =conf/example.mk= call =make CONFIG=example=. It can be uploaded with =make CONFIG=example upload=.
+
+Note that GCC9 produces larger binaries than GCC8. A full sensor configuration may no longer fit. In this case, try again with GCC8.
+
+When changing configuration settings delete the build-* directories before building again - changed flags don't always trigger correct rebuilds.
+
+The build output is in =build-<board>/=, named =mqtt_sensor-<version>= for a default build, or =mqtt_sensor-<board>-<version>= for a board specific build. Version and board information are also embedded in the binary, and are published to MQTT.
+
+** Hardware
+*** Arduino
+Obviously this project needs an Arduino to hook everything up to. Any Arduino with a 328P should be fine. Classic Arduinos waste a lot of space, though, so I recommend to use either a Nano or a 5V Pro Mini. Pinouts are only documented for those two boards.
+
+Note that Arduinos from 2018 onwards have a new bootloader. As the old bootloader breaks watchdog functionality - which is required for mqtt_sensor to function properly - old Arduinos need to be flashed with the new bootloader.
+
+You have the old bootloader if:
+
+- you can't flash at a baud rate of 115200, but need to use 57600 instead (exception: Pro Mini 8MHz is 57600 with new bootloader, but you shouldn't be using that anyway)
+- after flashing without network cable connected the LED starts blinking rapidly after about 8 seconds, and the Arduino only becomes reachable again after disconnecting power
+
+*** Ethernet
+For network connectivity an Ethernet module is required. The following list contains the most sensible options.
+
+**** ENC28J60 Ethernet shield
+This is a shield attaching to a Nano with the ENC28J60 Ethernet chip, supported by the UIP Ethernet library. This is a cheap option - available at about 4 EUR from Chinese sellers. Unlike the Wiznet chips it does not contain an IP stack - so the IP stack needs to run on the Arduino, taking up valuable space there. Therefore this module is only recommended for initial prototyping on a budget. A full sensor configuration will not fit into memory with this shield.
+**** W5100 Ethernet shield
+Those are mostly the [[http://deek-robot.com/en/index.asp][deek-robot]] Ethernet shields with MicroSD slot. They're typically available for about 9 EUR from Chinese sellers. Their main disadvantage is the large size - but it is the easiest/cheapest to get Wiznet shield for the Nano.
+**** W5500 Ethernet shield
+As far as I know this is only available from [[https://robotdyn.com/nano-v3-ethernet-shield-w5500-v2.html][RobotDyn]] - which might have too high shipping costs when only wanting to buy a single module. It has the same small form factor as the ENC28J60-shield, while costing about the same as the W5100 shield. The W5500 is more modern and robust than the W5100, so this is the recommended hardware when using a Nano, assuming you can get one.
+**** W5500 Lite
+This is the [[https://maker.wiznet.io/2017/06/30/bitconn-w5500-module/][W5500 on a breakout board]] - with pretty much the smallest footprint possible. It is typically available for about 5 EUR from Chinese sellers. For the Pro Mini - where the shields don't fit anyway - this is the recommended module. If ease of use doesn't matter it also is a good choice for the Nano due to easy availability.
+
+*** Sensors
+For all the sensors listed below make sure to either go for a 5v tolerant version, or check [[https://next-hack.com/index.php/2017/09/15/how-to-interface-a-5v-output-to-a-3-3v-input/][how to hook it up safely anyway.]]
+**** DHT22 humidity sensor
+The [[https://www.seeedstudio.com/DIP-Tem-Hum-Sensor-4P-2-54-p-4193.html][DHT22]] provides humidity and temperature sensors. This one is easiest to use without a breakout board, so any source is fine. Unless you have a specific reason to use this sensor go for a BME280 instead.
+
+Connect this sensor to GND, 5V and a digital pin (default: 9). Add a resistor between the digital pin and VCC.
+
+To use this sensor clone the [[https://github.com/adafruit/DHT-sensor-library][DHT sensor library]] as DHT in your library folder, and check out commit =519393f42e9ac9153df34e6a0260461e387cf196= and add =DHT= to the =SENSORS= variable in your target configuration.
+
+**** MCP9808 temperature sensor
+The MCP9808 offers a high precision temperature reading. This one is easiest to use on a breakout board - any variant on a breakout board should be fine.
+
+Connect this sensor to GND, 5V, SDA and SCL (typically A4/A5).
+
+To use this sensor clone the [[https://github.com/adafruit/Adafruit_MCP9808_Library][MCP9808 sensor library]] as Adafruit_MCP9808, and check out commit =4f2b2d938fe23705626923140f9a8f5a3a135458= (HEAD, as of writing this documentation). Add =MCP9808= to the =SENSORS= variable in your target configuration.
+
+**** BMP085 or compatible barometric pressure sensor
+Any sensor of the BMP085 family (with the [[https://www.bosch-sensortec.com/products/environmental-sensors/pressure-sensors/bmp280/][BMP280]] being the latest) will provide a temperature and pressure reading. This one is easiest to use on a breakout board - any variant on a breakout board should be fine. Unless you have a specific reason to go for this sensor get a BME280 instead.
+
+Connect this sensor to GND, 5V, SDA and SCL (typically A4/A5).
+
+To use this sensor clone the [[https://github.com/adafruit/Adafruit-BMP085-Library][BMP085 sensor library]] as Adafruit_BMP085, and check out commit =7b69aedc7fac17fb33cd0a3b98d62767f7e59873= (1.0.1). Add =BMP085= to the =SENSORS= variable in your target configuration.
+
+**** BME280
+The [[https://www.bosch-sensortec.com/products/environmental-sensors/humidity-sensors-bme280/][BME280]] is a tiny i²c sensor providing humidity, pressure and temperature readings. If you're interested in two of those readings get this sensor, and enjoy the 3rd one thrown in for free.
+
+Connect this sensor to GND, 5V, SDA and SCL (typically A4/A5).
+**** Rain sensor with LM393
+There are various kits out there consisting on a board with traces plus a separate module with a LM393 to detect rain. Any of those are fine.
+
+Connect the control module to GND, 5V, a digital pin (default: 8) and an analogue pin (default: A3).
+
+Add =RAIN+ to the =SENSORS= variable in your target configuration.
+** MQTT topic structure
+Per default the sensor publishes to =mqtt_sensor/node/topics=. Without additional configuration the MAC address is used as node name. Depending on sensor configuration the following topics may be available:
+
+*** i
+This topic contains generic information about the sensor.
+**** v
+The firmware version, calculated at build time. Also contains a 'd' marker if built from a dirty git tree.
+**** b
+The board configuration used for building the firmware.
+**** c
+The git hash used for building the firmware.
+**** up
+The uptime of the node in seconds
+**** mqtt_up
+The connection uptime to the MQTT broker in seconds
+**** bmp085
+Present when compiled with BMP085 support. =true= if the sensor is present, =false= if the sensor is absent. Readings will only be published if =true=.
+**** mcp9808
+Present when compiled with MCP9808 support. =true= if the sensor is present, =false= if the sensor is absent. Readings will only be published if =true=.
+*** r
+Present if compiled with a rain sensor. Will contain the =rain= subtopic with the rain reading.
+*** p
+Present if any sensor providing pressure readings is configured and connected. Subtopics named after the sensors report readings in hPa (e.g. bmp085=1007.4).
+*** h
+Present if any sensor providing humidity readings is configured and connected. Subtopics named after the sensors report readings as relative humidity (e.g. dht22=24.3).
+
+Note that detection doesn't work properly for the DHT22, so if it is configured but not connected the readings will be nonsensical.
+*** t
+Present if any sensor providing temperature readings is configured and connected. Subtopics named after the sensors report readings in degree Celcius (e.g. mcp9808=23.7).
+
+Note that detection doesn't work properly for the DHT22, so if it is configured but not connected the readings will be nonsensical.
+*** s
+This topic is for configuring the sensor - mqtt_sensor subscribes to this topic, but never publishes to it, apart from clearing it after handling. It will publish a result code to =?= under the main topic.
+
+All settings start with an identifying character, possibly a second level identifying character for nested settings, followed directly by the setting value.
+
+Unless explicitely mentioned settings will only be taken into use after a reset.
+
+**** i (interval)
+Configures the reporting interval in seconds (default: 10). Returns =iOK= or =iE=. This setting does not require a reset.
+
+#+BEGIN_SRC bash
+# mosquitto_pub -h mqtt -t "mqtt_sensor/s01/s" -m "i5"
+# mosquitto_sub -h mqtt -t "mqtt_sensor/s01/?"
+iOK
+#+END_SRC bash
+
+**** n (node name)
+Configures the node name (default: MAC address). Returns =nOK= or =nE=.
+
+#+BEGIN_SRC bash
+# mosquitto_pub -h mqtt -t "mqtt_sensor/s01/s" -m "nmysensor"
+# mosquitto_sub -h mqtt -t "mqtt_sensor/s01/?"
+nOK
+#+END_SRC bash
+
+**** r (reset)
+Reset the sensor by triggering the watchdog. This will not set =?=. After triggering this it should take up to 10 seconds before the sensor is available again, and reporting with new settings.
+
+#+BEGIN_SRC bash
+# mosquitto_pub -h mqtt -t "mqtt_sensor/s01/s" -m "r"
+#+END_SRC bash
+
+**** t (reTain)
+Configures the retain flag (default: off). Valid values are =0= or =1=. Returns =tOK= or =tE=. This setting does not require a reset, but will not re-publish topics only set on startup. Note that =uptime=, =mqtt_uptime= and =?= will never be retained.
+
+#+BEGIN_SRC bash
+# mosquitto_pub -h mqtt -t "mqtt_sensor/s01/s" -m "t1"
+# mosquitto_sub -h mqtt -t "mqtt_sensor/s01/?"
+tOK
+#+END_SRC bash
+
+**** m (MQTT sub-settings)
+Take compiled in length restrictions into account for those settings. Too long input strings will report error without changing the value.
+
+For larger deployments consider compiling the firmware with a provisioning MQTT server, and update sensor specific settings on the first connection to that server.
+
+***** mu (MQTT user)
+Configures the username for MQTT. Returns =muOK= or =muERR=.
+
+#+BEGIN_SRC bash
+# mosquitto_pub -h mqtt -t "mqtt_sensor/s01/s" -m "mumyuser"
+# mosquitto_sub -h mqtt -t "mqtt_sensor/s01/?"
+muOK
+#+END_SRC bash
+
+***** mp (MQTT password)
+Configures the password for MQTT. Returns =mpOK= or =mpERR=.
+
+#+BEGIN_SRC bash
+# mosquitto_pub -h mqtt -t "mqtt_sensor/s01/s" -m "mpmypass"
+# mosquitto_sub -h mqtt -t "mqtt_sensor/s01/?"
+mpOK
+#+END_SRC bash
+
+***** ms (MQTT server)
+Configures the server name for MQTT. Returns =msOK= or =msERR=.
+
+#+BEGIN_SRC bash
+# mosquitto_pub -h mqtt -t "mqtt_sensor/s01/s" -m "msmy.mqtt.server"
+# mosquitto_sub -h mqtt -t "mqtt_sensor/s01/?"
+msOK
+#+END_SRC bash
+
+***** mt (MQTT porT)
+Configures the port number for MQTT. Returns =mtOK= or =mtERR=.
+
+#+BEGIN_SRC bash
+# mosquitto_pub -h mqtt -t "mqtt_sensor/s01/s" -m "mt1234"
+# mosquitto_sub -h mqtt -t "mqtt_sensor/s01/?"
+mtOK
+#+END_SRC bash
