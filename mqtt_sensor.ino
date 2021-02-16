@@ -27,6 +27,11 @@
 #define debug_println(msg)
 #endif
 
+// allow overriding mqtt connection settings via mqtt
+#ifndef MQTT_CONFIG
+#define MQTT_CONFIG 1
+#endif
+
 #ifndef MQTT_USER
 #define MQTT_USER "arduino"
 #endif
@@ -79,22 +84,90 @@ void mqtt_callback(char* topic, byte* payload, unsigned int length){
    * nnodename configure a new node name
    * r         reset by triggering watchdog
    * t0|1      set the retain flag
-   *
-   * probably group mqtt options as second level under m, if running out of letters
+   * m         mqtt-settings with following sub-keys
+   * muuser    mqtt user
+   * mppass    mqtt password
+   * msserver  mqtt server
+   * mtport    mqtt port
    */
 
   switch (payload[0]){
+    case 'i':
+      if (length<10){
+        strlcpy(itoa_buf, payload+1, length);
+        config.report_interval=atoi(itoa_buf);
+        state.config_changed=true;
+        client.publish(tmp_topic.c_str(), "iOK");
+      } else
+        client.publish(tmp_topic.c_str(), "iE");
+      break;
     case 'r':
       delay(10000);
     case 'n':
       if (length<=sizeof(config.node)){
         strlcpy(config.node, payload+1, length);
         state.config_changed=true;
-        client.publish(tmp_topic.c_str(), "OK");
+        client.publish(tmp_topic.c_str(), "nOK");
       } else {
-        client.publish(tmp_topic.c_str(), "El");
+        client.publish(tmp_topic.c_str(), "nE");
       }
       break;
+#if MQTT_CONFIG > 0
+    case 'm':
+      switch (payload[1]){
+        case 'u':
+          if (length-1<=sizeof(config.mqtt_user)){
+            strlcpy(config.mqtt_user, payload+2, length-1);
+            state.config_changed=true;
+            client.publish(tmp_topic.c_str(), "muOK");
+          } else {
+            client.publish(tmp_topic.c_str(), "muE");
+          }
+          break;
+        case 'p':
+          if (length-1<=sizeof(config.mqtt_pass)){
+            strlcpy(config.mqtt_pass, payload+2, length-1);
+            state.config_changed=true;
+            client.publish(tmp_topic.c_str(), "mpOK");
+          } else {
+            client.publish(tmp_topic.c_str(), "mpE");
+          }
+          break;
+        case 's':
+          if (length-1<=sizeof(config.mqtt_host)){
+            strlcpy(config.mqtt_host, payload+2, length-1);
+            state.config_changed=true;
+            client.publish(tmp_topic.c_str(), "msOK");
+          } else {
+            client.publish(tmp_topic.c_str(), "msE");
+          }
+          break;
+        case 't':
+          if (length-1<=10){
+            strlcpy(itoa_buf, payload+1, length-1);
+            config.mqtt_port=atoi(itoa_buf);
+            state.config_changed=true;
+            client.publish(tmp_topic.c_str(), "mtOK");
+          } else {
+            client.publish(tmp_topic.c_str(), "mtE");
+          }
+          break;
+      }
+      break;
+#endif
+    case 't':
+      if (payload[1]=='0'){
+        config.mqtt_retain=false;
+        state.config_changed=true;
+        client.publish(tmp_topic.c_str(), "tOK");
+      } else if (payload[1]=='1'){
+        config.mqtt_retain=true;
+        state.config_changed=true;
+        client.publish(tmp_topic.c_str(), "tOK");
+      } else
+        client.publish(tmp_topic.c_str(), "tE");
+      break;
+
   }
 
   c.save();
