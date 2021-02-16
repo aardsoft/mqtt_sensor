@@ -251,13 +251,6 @@ void report_uptime(){
 
 void report_sensor_availability(){
   String tmp_topic;
-#if ENVIRONMENTMONITOR_SENSOR_DHT22 > 0
-  tmp_topic=node_topic+"i/dht22";
-  client.publish(tmp_topic.c_str(),
-                 mon.hasDHT22()?"true":"false",
-                 config.mqtt_retain);
-#endif
-
 
 #if ENVIRONMENTMONITOR_SENSOR_MCP9808 > 0
   tmp_topic=node_topic+"i/mcp9808";
