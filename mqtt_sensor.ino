@@ -1,4 +1,7 @@
 #define debug_log 0
+#ifndef ENVIRONMENTMONITOR
+#define ENVIRONMENTMONITOR 0
+#endif
 
 #include "config.h"
 
@@ -11,7 +14,11 @@
 #include <Ethernet.h>
 #endif
 #include <PubSubClient.h>
+
+#if ENVIRONMENTMONITOR > 0
 #include <EnvironmentMonitor.h>
+#endif
+
 #include <PersistentConfiguration.h>
 
 #include <avr/wdt.h>
@@ -71,9 +78,11 @@ PersistentConfiguration c;
 EthernetClient ethClient;
 PubSubClient client;
 
+#if ENVIRONMENTMONITOR > 0
 EnvironmentMonitor mon;
 measurement *measurements;
 byte measurement_p=0;
+#endif
 
 void mqtt_callback(char* topic, byte* payload, unsigned int length){
   String tmp_topic=node_topic+"?";
@@ -354,7 +363,9 @@ void setup(){
     for (;;);
   }
 
+#if ENVIRONMENTMONITOR > 0
   mon.begin();
+#endif
 
   client.setClient(ethClient);
   client.setServer(config.mqtt_host,
@@ -375,10 +386,12 @@ void loop(){
       uptime=m;
       report_uptime();
 
+#if ENVIRONMENTMONITOR > 0
       if (mon.pollSensors()){
         measurements = mon.data(&measurement_p);
         report_sensors();
       }
+#endif
 
       digitalWrite(LED, LOW);
     }

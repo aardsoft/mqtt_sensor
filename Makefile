@@ -18,7 +18,7 @@ HEX_MAXIMUM_SIZE = 32256
 
 -include conf/board.mk
 
-ARDUINO_LIBS = PersistentConfiguration MACTool EnvironmentMonitor EEPROM PubSubClient
+ARDUINO_LIBS = PersistentConfiguration MACTool EEPROM PubSubClient
 
 # somewhat reduces binary size by preferring RCALL over CALL
 LDFLAGS += -Wl,--relax
@@ -66,22 +66,27 @@ endif
 
 ifneq "$(findstring DHT,$(SENSORS))" ""
 CXXFLAGS += -DENVIRONMENTMONITOR_SENSOR_DHT22=1
-ARDUINO_LIBS += DHT
+ARDUINO_LIBS += DHT EnvironmentMonitor
 endif
 
 ifneq "$(findstring MCP9808,$(SENSORS))" ""
 CXXFLAGS += -DENVIRONMENTMONITOR_SENSOR_MCP9808=1
-ARDUINO_LIBS += Adafruit_MCP9808 Wire SPI
+ARDUINO_LIBS += Adafruit_MCP9808 Wire SPI EnvironmentMonitor
 #Adafruit_Sensor
 endif
 
 ifneq "$(findstring BMP085,$(SENSORS))" ""
 CXXFLAGS += -DENVIRONMENTMONITOR_SENSOR_BMP085=1
-ARDUINO_LIBS += Adafruit_BMP085 Wire
+ARDUINO_LIBS += Adafruit_BMP085 Wire EnvironmentMonitor
 endif
 
 ifneq "$(findstring RAIN,$(SENSORS))" ""
 CXXFLAGS += -DENVIRONMENTMONITOR_SENSOR_RAIN=1
+ARDUINO_LIBS += EnvironmentMonitor
+endif
+
+ifneq "$(findstring EnvironmentMonitor,$(ARDUINO_LIBS))" ""
+CXXFLAGS += -DENVIRONMENTMONITOR=1
 endif
 
 include /usr/share/arduino/Arduino.mk
