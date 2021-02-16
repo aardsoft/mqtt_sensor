@@ -1,4 +1,4 @@
 build-*/
 /board.mk
 /mqtt.h
-/conf/
+/conf/*.mk
