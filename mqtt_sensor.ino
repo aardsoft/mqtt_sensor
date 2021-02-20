@@ -103,8 +103,8 @@ void mqtt_callback(char* topic, byte* payload, unsigned int length){
   switch (payload[0]){
     case 'i':
       if (length<10){
-        strlcpy(itoa_buf, payload+1, length);
-        config.report_interval=atoi(itoa_buf);
+        strlcpy(ltoa_buf, payload+1, length);
+        config.report_interval=atol(ltoa_buf);
         state.config_changed=true;
         client.publish(tmp_topic.c_str(), "iOK");
       } else
@@ -330,7 +330,7 @@ void setup(){
     memset(config.node, 0, sizeof(config.node));
     strlcpy(config.node, config.mac, sizeof(config.node));
 
-    config.report_interval=6;
+    config.report_interval=10000;
     config.mqtt_retain=false;
 
     state.config_changed=true;
@@ -374,7 +374,7 @@ void loop(){
   } else {
     client.loop();
     unsigned long m=millis();
-    if (m-uptime >= config.report_interval*1000){
+    if (m-uptime >= config.report_interval){
       digitalWrite(LED, HIGH);
       uptime=m;
       report_uptime();

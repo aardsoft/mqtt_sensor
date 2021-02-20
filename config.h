@@ -37,8 +37,8 @@ struct ConfigData {
     char mqtt_pass[MQTT_PASSWORD_MAX];
     char mqtt_host[MQTT_HOST_MAX];
 
-    unsigned int mqtt_port;
-    byte report_interval;
+    int mqtt_port;
+    long report_interval;
     boolean mqtt_retain;
     // node name reported by this device
     char node[30];

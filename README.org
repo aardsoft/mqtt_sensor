@@ -201,10 +201,10 @@ All settings start with an identifying character, possibly a second level identi
 Unless explicitely mentioned settings will only be taken into use after a reset.
 
 **** i (interval)
-Configures the reporting interval in seconds (default: 10). Returns =iOK= or =iE=. This setting does not require a reset.
+Configures the reporting interval in milliseconds (default: 10000). Returns =iOK= or =iE=. This setting does not require a reset.
 
 #+BEGIN_SRC bash
-# mosquitto_pub -h mqtt -t "mqtt_sensor/s01/s" -m "i5"
+# mosquitto_pub -h mqtt -t "mqtt_sensor/s01/s" -m "i5000"
 # mosquitto_sub -h mqtt -t "mqtt_sensor/s01/?"
 iOK
 #+END_SRC bash
