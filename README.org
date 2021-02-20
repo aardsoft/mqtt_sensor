@@ -28,6 +28,7 @@
       - [[#v][v]]
       - [[#b][b]]
       - [[#c][c]]
+      - [[#o][o]]
       - [[#up][up]]
       - [[#mqtt_up][mqtt_up]]
       - [[#bmp085][bmp085]]
@@ -173,6 +174,8 @@ The firmware version, calculated at build time. Also contains a 'd' marker if bu
 The board configuration used for building the firmware.
 **** c
 The git hash used for building the firmware.
+**** o
+The overflow counter for uptime, which should get triggered [[https://www.arduino.cc/reference/en/language/functions/time/millis/][roughly every 50 days.]]
 **** up
 The uptime of the node in seconds
 **** mqtt_up

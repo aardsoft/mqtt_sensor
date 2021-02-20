@@ -66,6 +66,7 @@ char itoa_buf[10];
 // uptime counters for the system and the MQTT connection
 unsigned long uptime=0;
 unsigned long mqtt_uptime=0;
+byte overflow;
 
 // connection attempt counter to trigger reset on persistent failure
 byte mqtt_connect_counter=0;
@@ -247,6 +248,10 @@ void report_uptime(){
   ltoa(uptime/1000, ltoa_buf, 10);
   client.publish(tmp_topic.c_str(),
                  ltoa_buf);
+  tmp_topic=node_topic+"i/o";
+  itoa(overflow, itoa_buf, 3);
+  client.publish(tmp_topic.c_str(),
+                 itoa_buf);
 }
 
 void report_sensor_availability(){
@@ -374,6 +379,14 @@ void loop(){
   } else {
     client.loop();
     unsigned long m=millis();
+    if (m<uptime){
+      // this should happen every ~50 days on counter overflow
+      uptime=m;
+      // mqtt_uptime might be different, so just resetting it here is not the
+      // best solution. Update whenever bored.
+      mqtt_uptime=m;
+      overflow++;
+    }
     if (m-uptime >= config.report_interval){
       digitalWrite(LED, HIGH);
       uptime=m;
