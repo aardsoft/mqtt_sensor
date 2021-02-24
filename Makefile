@@ -44,6 +44,7 @@ else
 -include conf/default-config.mk
 endif
 
+#CXXFLAGS += -DCONFIC_MAGIC=0000
 CXXFLAGS += -DVERSION_STRING='"$(VERSION_STRING)"'
 CXXFLAGS += -DGIT_HASH='"$(GIT_HASH)"'
 
@@ -78,6 +79,34 @@ endif
 ifneq "$(findstring BMP085,$(SENSORS))" ""
 CXXFLAGS += -DENVIRONMENTMONITOR_SENSOR_BMP085=1
 ARDUINO_LIBS += Adafruit_BMP085 Wire EnvironmentMonitor
+endif
+
+ifneq "$(findstring BME280,$(SENSORS))" ""
+CXXFLAGS += -DENVIRONMENTMONITOR_SENSOR_BME280=1
+ARDUINO_LIBS += EnvironmentMonitor
+ ifndef BME_LIBRARY
+BME_LIBRARY = ADAFRUIT
+ endif
+ ifneq "$(findstring ADAFRUIT,$(BME_LIBRARY))" ""
+CXXFLAGS += -DENVIRONMENTMONITOR_BME_LIBRARY=L_Adafruit
+ARDUINO_LIBS += Adafruit_BME280 Wire Adafruit_Sensor
+ endif
+ ifneq "$(findstring BOSCH,$(BME_LIBRARY))" ""
+CXXFLAGS += -DENVIRONMENTMONITOR_BME_LIBRARY=L_Bosch
+ARDUINO_LIBS += Bme280BoschWrapper Wire
+ endif
+ ifneq "$(findstring GLENN,$(BME_LIBRARY))" ""
+CXXFLAGS += -DENVIRONMENTMONITOR_BME_LIBRARY=L_Glenn
+ARDUINO_LIBS += BME280 Wire
+ endif
+ ifneq "$(findstring SPARKFUN,$(BME_LIBRARY))" ""
+CXXFLAGS += -DENVIRONMENTMONITOR_BME_LIBRARY=L_SparkFun
+ARDUINO_LIBS += SparkFunBME280 Wire
+ endif
+ ifneq "$(findstring FORCED,$(BME_LIBRARY))" ""
+CXXFLAGS += -DENVIRONMENTMONITOR_BME_LIBRARY=L_Forced
+ARDUINO_LIBS += forcedClimate Wire
+ endif
 endif
 
 ifneq "$(findstring RAIN,$(SENSORS))" ""

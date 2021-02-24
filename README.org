@@ -28,6 +28,11 @@
       - [[#mcp9808-temperature-sensor][MCP9808 temperature sensor]]
       - [[#bmp085-or-compatible-barometric-pressure-sensor][BMP085 or compatible barometric pressure sensor]]
       - [[#bme280][BME280]]
+        - [[#adafruit][Adafruit]]
+        - [[#forced-bme280][Forced-BME280]]
+        - [[#sparkfun-bme280][SparkFun BME280]]
+        - [[#wrapper-around-bosch-driver][Wrapper around Bosch driver]]
+        - [[#driver-originally-written-by-tyler-glenn][Driver originally written by Tyler Glenn]]
       - [[#rain-sensor-with-lm393][Rain sensor with LM393]]
   - [[#mqtt-topic-structure][MQTT topic structure]]
     - [[#i][i]]
@@ -173,9 +178,27 @@ Connect this sensor to GND, 5V, SDA and SCL (typically A4/A5).
 To use this sensor clone the [[https://github.com/adafruit/Adafruit-BMP085-Library][BMP085 sensor library]] as Adafruit_BMP085, and check out commit =7b69aedc7fac17fb33cd0a3b98d62767f7e59873= (1.0.1). Add =BMP085= to the =SENSORS= variable in your target configuration.
 
 **** BME280
-The [[https://www.bosch-sensortec.com/products/environmental-sensors/humidity-sensors-bme280/][BME280]] is a tiny i²c sensor providing humidity, pressure and temperature readings. If you're interested in two of those readings get this sensor, and enjoy the 3rd one thrown in for free.
+The [[https://www.bosch-sensortec.com/products/environmental-sensors/humidity-sensors-bme280/][BME280]] is a tiny i²c sensor providing humidity, pressure and temperature readings. If you're interested in two of those readings get this sensor, and enjoy the 3rd one thrown in for free. Pretty much the only reason for not using the BME is a lack of space - all drivers for this sensor take significantly more space than other drivers. Pretty much all other humidity sensors have worse accuracy, though, so if you care about humidity you're probably stuck with this one.
 
 Connect this sensor to GND, 5V, SDA and SCL (typically A4/A5).
+
+For this sensor multiple libraries are supported and can be anabled through the =BME_LIBRARY= variable in the board configuration file. If not selected =FORCED= with the smallest footprint will be used.
+
+***** Adafruit
+[[https://github.com/adafruit/Adafruit_BME280_Library][The Adafruit driver]] is somewhere in the middle regarding code size, but most annoying to use - I'd therefore recommend to avoid that one. It can be used by cloning it into the library folder as Adafruit_BME280 and setting =BME_LIBRARY= to =ADAFRUIT=. It was tested with commit =610d7292df14c6403ef829634c747c39b790917d=. It also needs the Adafruit common sensor thing.
+
+***** Forced-BME280
+[[https://github.com/JVKran/Forced-BME280][The Forced-BME280]] library operates the BME280 in forced mode, and is optimised for a small footprint. This library is significantly smaller than all the other ones listed here, and unless a feature of one of the other libraries is needed should be used. It can be cloned into the library folder as forcedClimate, and enabled by setting =BME_LIBRARY= to =FORCED=.
+
+***** SparkFun BME280
+[[https://github.com/sparkfun/SparkFun_BME280_Arduino_Library][The SparkFun BME280 Library]] is another implementation with very similar footprint to all the others. It can be used by cloning it into the library folder as SparkFunBME280 and setting =BME_LIBRARY= to =SPARKFUN=.
+
+***** Wrapper around Bosch driver
+[[https://github.com/bolderflight/BME280][This wrapper around Bosch code]] compiles into the largest binary. It can be cloned into the library folder as Bme280BoschWrapper and enabled by setting =BME_LIBRARY= to =BOSCH=. This can be relatively easily stripped down to the smallest of of the "big" libraries by adding some ifdefs to remove unused code, but even then it is significantly larger than Forced-BME.
+
+***** Driver originally written by Tyler Glenn
+[[https://github.com/finitespace/BME280][This driver]] is slightly smaller than the Bosch one. It can be cloned into the library folder as BME280 and enabled by setting =BME_LIBRARY= to =GLENN=.
+
 **** Rain sensor with LM393
 There are various kits out there consisting on a board with traces plus a separate module with a LM393 to detect rain. Any of those are fine.
 

@@ -277,8 +277,24 @@ void report_sensors(){
                    ltoa_buf,
                    config.mqtt_retain);
   }
+#endif
+
+#if ENVIRONMENTMONITOR_SENSOR_BME280 > 0
+  if (mon.hasBME280()){
+    tmp_topic=node_topic+"t/bme280";
+    dtostrf(measurements[0].bme280.temperature, 3, 1, ltoa_buf);
     client.publish(tmp_topic.c_str(),
-                   itoa_buf,
+                   ltoa_buf,
+                   config.mqtt_retain);
+    tmp_topic=node_topic+"p/bme280";
+    dtostrf(measurements[0].bme280.pressure, 5, 1, ltoa_buf);
+    client.publish(tmp_topic.c_str(),
+                   ltoa_buf,
+                   config.mqtt_retain);
+    tmp_topic=node_topic+"h/bme280";
+    dtostrf(measurements[0].bme280.humidity, 5, 1, ltoa_buf);
+    client.publish(tmp_topic.c_str(),
+                   ltoa_buf,
                    config.mqtt_retain);
   }
 #endif
@@ -324,6 +340,13 @@ void report_sensor_availability(){
   tmp_topic=node_topic+"i/bmp085";
   client.publish(tmp_topic.c_str(),
                  mon.hasBMP085()?"true":"false",
+                 config.mqtt_retain);
+#endif
+
+#if ENVIRONMENTMONITOR_SENSOR_BME280 > 0
+  tmp_topic=node_topic+"i/bme280";
+  client.publish(tmp_topic.c_str(),
+                 mon.hasBME280()?"true":"false",
                  config.mqtt_retain);
 #endif
 
