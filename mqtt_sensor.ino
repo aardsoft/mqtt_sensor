@@ -34,9 +34,59 @@
 #define debug_println(msg)
 #endif
 
+#ifndef MQTT_RESPONSE
+#define MQTT_RESPONSE 1
+#endif
+
+#if MQTT_RESPONSE > 0
+#define mqtt_publish(response, code) client.publish(response, code)
+#else
+#define mqtt_publish(response, code)
+#endif
+
+#ifndef MQTT_VERBOSE_RESPONSE
+#define MQTT_VERBOSE_RESPONSE 0
+#endif
+
+#if MQTT_VERBOSE_RESPONSE > 0
+#define MQTT_RESPONSE_OK_I "iOK"
+#define MQTT_RESPONSE_ERR_I "iE"
+#define MQTT_RESPONSE_OK_N "nOK"
+#define MQTT_RESPONSE_ERR_N "nE"
+#define MQTT_RESPONSE_OK_T "tOK"
+#define MQTT_RESPONSE_ERR_T "tE"
+#define MQTT_RESPONSE_OK_MU "muOK"
+#define MQTT_RESPONSE_ERR_MU "muE"
+#define MQTT_RESPONSE_OK_MP "mpOK"
+#define MQTT_RESPONSE_ERR_MP "mpE"
+#define MQTT_RESPONSE_OK_MS "msOK"
+#define MQTT_RESPONSE_ERR_MS "msE"
+#define MQTT_RESPONSE_OK_MT "mtOK"
+#define MQTT_RESPONSE_ERR_MT "mtE"
+#else
+#define MQTT_RESPONSE_OK_I "OK"
+#define MQTT_RESPONSE_ERR_I "E"
+#define MQTT_RESPONSE_OK_N "OK"
+#define MQTT_RESPONSE_ERR_N "E"
+#define MQTT_RESPONSE_OK_T "OK"
+#define MQTT_RESPONSE_ERR_T "E"
+#define MQTT_RESPONSE_OK_MU "OK"
+#define MQTT_RESPONSE_ERR_MU "E"
+#define MQTT_RESPONSE_OK_MP "OK"
+#define MQTT_RESPONSE_ERR_MP "E"
+#define MQTT_RESPONSE_OK_MS "OK"
+#define MQTT_RESPONSE_ERR_MS "E"
+#define MQTT_RESPONSE_OK_MT "OK"
+#define MQTT_RESPONSE_ERR_MT "E"
+#endif
+
 // allow overriding mqtt connection settings via mqtt
 #ifndef MQTT_CONFIG
 #define MQTT_CONFIG 1
+#endif
+
+#ifndef REPORT_SENSOR_AVAILABILITY
+#define REPORT_SENSOR_AVAILABILITY 1
 #endif
 
 #ifndef MQTT_USER
@@ -57,11 +107,12 @@
 
 void mqtt_callback(char* topic, byte* payload, unsigned int length);
 
+#ifdef BLINK_LED
 int LED=13;
+#endif
 
-// static shared buffers
+// static shared buffer for ltoa/itoa
 char ltoa_buf[20];
-char itoa_buf[10];
 
 // uptime counters for the system and the MQTT connection
 unsigned long uptime=0;
@@ -107,9 +158,9 @@ void mqtt_callback(char* topic, byte* payload, unsigned int length){
         strlcpy(ltoa_buf, payload+1, length);
         config.report_interval=atol(ltoa_buf);
         state.config_changed=true;
-        client.publish(tmp_topic.c_str(), "iOK");
+        mqtt_publish(tmp_topic.c_str(), MQTT_RESPONSE_OK_I);
       } else
-        client.publish(tmp_topic.c_str(), "iE");
+        mqtt_publish(tmp_topic.c_str(), MQTT_RESPONSE_ERR_I);
       break;
     case 'r':
       delay(10000);
@@ -117,9 +168,9 @@ void mqtt_callback(char* topic, byte* payload, unsigned int length){
       if (length<=sizeof(config.node)){
         strlcpy(config.node, payload+1, length);
         state.config_changed=true;
-        client.publish(tmp_topic.c_str(), "nOK");
+        mqtt_publish(tmp_topic.c_str(), MQTT_RESPONSE_OK_N);
       } else {
-        client.publish(tmp_topic.c_str(), "nE");
+        mqtt_publish(tmp_topic.c_str(), MQTT_RESPONSE_ERR_N);
       }
       break;
 #if MQTT_CONFIG > 0
@@ -129,37 +180,37 @@ void mqtt_callback(char* topic, byte* payload, unsigned int length){
           if (length-1<=sizeof(config.mqtt_user)){
             strlcpy(config.mqtt_user, payload+2, length-1);
             state.config_changed=true;
-            client.publish(tmp_topic.c_str(), "muOK");
+            mqtt_publish(tmp_topic.c_str(), MQTT_RESPONSE_OK_MU);
           } else {
-            client.publish(tmp_topic.c_str(), "muE");
+            mqtt_publish(tmp_topic.c_str(), MQTT_RESPONSE_ERR_MU);
           }
           break;
         case 'p':
           if (length-1<=sizeof(config.mqtt_pass)){
             strlcpy(config.mqtt_pass, payload+2, length-1);
             state.config_changed=true;
-            client.publish(tmp_topic.c_str(), "mpOK");
+            mqtt_publish(tmp_topic.c_str(), MQTT_RESPONSE_OK_MP);
           } else {
-            client.publish(tmp_topic.c_str(), "mpE");
+            mqtt_publish(tmp_topic.c_str(), MQTT_RESPONSE_ERR_MP);
           }
           break;
         case 's':
           if (length-1<=sizeof(config.mqtt_host)){
             strlcpy(config.mqtt_host, payload+2, length-1);
             state.config_changed=true;
-            client.publish(tmp_topic.c_str(), "msOK");
+            mqtt_publish(tmp_topic.c_str(), MQTT_RESPONSE_OK_MS);
           } else {
-            client.publish(tmp_topic.c_str(), "msE");
+            mqtt_publish(tmp_topic.c_str(), MQTT_RESPONSE_ERR_MS);
           }
           break;
         case 't':
           if (length-1<=10){
-            strlcpy(itoa_buf, payload+1, length-1);
-            config.mqtt_port=atoi(itoa_buf);
+            strlcpy(ltoa_buf, payload+1, length-1);
+            config.mqtt_port=atoi(ltoa_buf);
             state.config_changed=true;
-            client.publish(tmp_topic.c_str(), "mtOK");
+            mqtt_publish(tmp_topic.c_str(), MQTT_RESPONSE_OK_MT);
           } else {
-            client.publish(tmp_topic.c_str(), "mtE");
+            mqtt_publish(tmp_topic.c_str(), MQTT_RESPONSE_ERR_MT);
           }
           break;
       }
@@ -169,13 +220,13 @@ void mqtt_callback(char* topic, byte* payload, unsigned int length){
       if (payload[1]=='0'){
         config.mqtt_retain=false;
         state.config_changed=true;
-        client.publish(tmp_topic.c_str(), "tOK");
+        mqtt_publish(tmp_topic.c_str(), MQTT_RESPONSE_OK_T);
       } else if (payload[1]=='1'){
         config.mqtt_retain=true;
         state.config_changed=true;
-        client.publish(tmp_topic.c_str(), "tOK");
+        mqtt_publish(tmp_topic.c_str(), MQTT_RESPONSE_OK_T);
       } else
-        client.publish(tmp_topic.c_str(), "tE");
+        mqtt_publish(tmp_topic.c_str(), MQTT_RESPONSE_ERR_T);
       break;
 
   }
@@ -191,14 +242,14 @@ void report_sensors(){
 #if ENVIRONMENTMONITOR_SENSOR_DHT22 > 0
   if (mon.hasDHT22()){
     tmp_topic=node_topic+"t/dht22";
-    dtostrf(measurements[0].dht22.temperature, 3, 1, itoa_buf);
+    dtostrf(measurements[0].dht22.temperature, 3, 1, ltoa_buf);
     client.publish(tmp_topic.c_str(),
-                   itoa_buf,
+                   ltoa_buf,
                    config.mqtt_retain);
     tmp_topic=node_topic+"h/dht22";
-    dtostrf(measurements[0].dht22.humidity, 3, 1, itoa_buf);
+    dtostrf(measurements[0].dht22.humidity, 3, 1, ltoa_buf);
     client.publish(tmp_topic.c_str(),
-                   itoa_buf,
+                   ltoa_buf,
                    config.mqtt_retain);
   }
 #endif
@@ -206,9 +257,9 @@ void report_sensors(){
 #if ENVIRONMENTMONITOR_SENSOR_MCP9808 > 0
   if (mon.hasMCP9808()){
     tmp_topic=node_topic+"t/mcp9808";
-    dtostrf(measurements[0].mcp9808.temperature, 3, 1, itoa_buf);
+    dtostrf(measurements[0].mcp9808.temperature, 3, 1, ltoa_buf);
     client.publish(tmp_topic.c_str(),
-                   itoa_buf,
+                   ltoa_buf,
                    config.mqtt_retain);
   }
 #endif
@@ -216,12 +267,16 @@ void report_sensors(){
 #if ENVIRONMENTMONITOR_SENSOR_BMP085 > 0
   if (mon.hasBMP085()){
     tmp_topic=node_topic+"t/bmp085";
-    dtostrf(measurements[0].bmp085.temperature, 3, 1, itoa_buf);
+    dtostrf(measurements[0].bmp085.temperature, 3, 1, ltoa_buf);
     client.publish(tmp_topic.c_str(),
-                   itoa_buf,
+                   ltoa_buf,
                    config.mqtt_retain);
     tmp_topic=node_topic+"p/bmp085";
-    dtostrf(measurements[0].bmp085.pressure, 5, 1, itoa_buf);
+    dtostrf(measurements[0].bmp085.pressure, 5, 1, ltoa_buf);
+    client.publish(tmp_topic.c_str(),
+                   ltoa_buf,
+                   config.mqtt_retain);
+  }
     client.publish(tmp_topic.c_str(),
                    itoa_buf,
                    config.mqtt_retain);
@@ -230,9 +285,9 @@ void report_sensors(){
 
 #if ENVIRONMENTMONITOR_SENSOR_RAIN > 0
   tmp_topic=node_topic+"r/rain";
-  itoa(measurements[0].rain.rain, itoa_buf, 10);
+  itoa(measurements[0].rain.rain, ltoa_buf, 10);
   client.publish(tmp_topic.c_str(),
-                 itoa_buf,
+                 ltoa_buf,
                  config.mqtt_retain);
 #endif
 }
@@ -249,11 +304,12 @@ void report_uptime(){
   client.publish(tmp_topic.c_str(),
                  ltoa_buf);
   tmp_topic=node_topic+"i/o";
-  itoa(overflow, itoa_buf, 3);
+  itoa(overflow, ltoa_buf, 3);
   client.publish(tmp_topic.c_str(),
-                 itoa_buf);
+                 ltoa_buf);
 }
 
+#if REPORT_SENSOR_AVAILABILITY > 0
 void report_sensor_availability(){
   String tmp_topic;
 
@@ -272,6 +328,7 @@ void report_sensor_availability(){
 #endif
 
 }
+#endif
 
 boolean reconnect_mqtt(){
   if (client.connect(
@@ -297,7 +354,9 @@ boolean reconnect_mqtt(){
                    config.mqtt_retain);
 #endif
     report_uptime();
+#if REPORT_SENSOR_AVAILABILITY > 0
     report_sensor_availability();
+#endif
 
     tmp_topic=node_topic+"s";
     client.subscribe(tmp_topic.c_str());
@@ -343,7 +402,9 @@ void setup(){
 
   c.save();
 
+#ifdef BLINK_LED
   pinMode(LED, OUTPUT);
+#endif
 
   node_topic+="/";
   node_topic+=config.node;
@@ -388,7 +449,9 @@ void loop(){
       overflow++;
     }
     if (m-uptime >= config.report_interval){
+#ifdef BLINK_LED
       digitalWrite(LED, HIGH);
+#endif
       uptime=m;
       report_uptime();
 
@@ -399,7 +462,9 @@ void loop(){
       }
 #endif
 
+#ifdef BLINK_LED
       digitalWrite(LED, LOW);
+#endif
     }
   }
 }

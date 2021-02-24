@@ -9,6 +9,12 @@
       - [[#mqtth][mqtt.h]]
       - [[#confdefault-configmk][conf/default-config.mk]]
       - [[#arbitrary-configuration-files-in-conf][arbitrary configuration files in conf/]]
+    - [[#optimization-flags][Optimization flags]]
+      - [[#mqtt_config][MQTT_CONFIG]]
+      - [[#mqtt_response][MQTT_RESPONSE]]
+      - [[#mqtt_verbose_response][MQTT_VERBOSE_RESPONSE]]
+      - [[#report_sensor_availability][REPORT_SENSOR_AVAILABILITY]]
+      - [[#blink_led][BLINK_LED]]
     - [[#building-1][Building]]
   - [[#hardware][Hardware]]
     - [[#arduino][Arduino]]
@@ -96,6 +102,19 @@ SENSORS = MCP9808 BMP085 DHT RAIN
 **** arbitrary configuration files in conf/
 Arbitrary files - ending in .mk - can be added to the conf directory. At minimum they should contain the sensors definition. To build with a configuration file use the =CONFIG= variable. For example, =make CONFIG=my= would read conf/my.mk, set BUILD_TAG to =my= unless specified, include =my= in the binary name, and report =my= to MQTT on startup as build info.
 
+*** Optimization flags
+The following flags can be used to reduce code size, if needed.
+
+**** MQTT_CONFIG
+Defaults to 1. When set to 0 omit configurability of MQTT connection parameters (server, username, password, port) via MQTT.
+**** MQTT_RESPONSE
+Defaults to 1. When set to 0 no response to configuration commands will be send to the =?= topic.
+**** MQTT_VERBOSE_RESPONSE
+Defaults to 0. When set to >= 1 responses to the =?= topic will contain a subsystem identifier (i.e., iOK instead of OK for a successful interval change).
+**** REPORT_SENSOR_AVAILABILITY
+Defaults to 1. Controls if sensors which can be autodetected show up in the =i= topic.
+**** BLINK_LED
+Default undefined. When defined, blinks the LED on pin 13 on every update cycle.
 *** Building
 A =make= with no options will try to build the default configuration. If mqtt.h has been created this will result in a minimal binary capable of connecting to a MQTT broker, but without any sensors configured. It can be uploaded to a board with =make upload=.
 
